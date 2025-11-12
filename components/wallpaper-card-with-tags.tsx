@@ -1,23 +1,26 @@
 'use client'
 
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Wallpaper } from '@/app/types'
 import { Card, CardContent } from './ui/card'
 import { Button } from './ui/button'
-import { Download, Eye, Heart } from 'lucide-react'
+import { Badge } from './ui/badge'
+import { Download, Eye, Heart, ChevronDown, ChevronUp } from 'lucide-react'
 import { useFavorites } from '@/hooks/use-favorites'
+import { TagManager } from './tag-manager'
 
-interface WallpaperCardProps {
+interface WallpaperCardWithTagsProps {
   wallpaper: Wallpaper
+  showTags?: boolean
 }
 
-export function WallpaperCard({ wallpaper }: WallpaperCardProps) {
+export function WallpaperCardWithTags({ wallpaper, showTags = false }: WallpaperCardWithTagsProps) {
   const [isLoading, setIsLoading] = useState(true)
-  const { isFavorited: checkFavorited, toggleFavorite, updateTrigger } = useFavorites()
-
-  // 直接使用 Hook 的状态，而不是本地状态，确保实时同步
+  const [showTagManager, setShowTagManager] = useState(showTags)
+  const { isFavorited: checkFavorited, toggleFavorite, getWallpaperTags, updateTrigger } = useFavorites()
   const isFavorited = checkFavorited(wallpaper.id) || wallpaper.isFavored
+  const currentTags = getWallpaperTags(wallpaper.id)
 
   const handleDownload = () => {
     const link = document.createElement('a')
@@ -92,9 +95,51 @@ export function WallpaperCard({ wallpaper }: WallpaperCardProps) {
               <Heart className={`h-4 w-4 ${isFavorited ? 'fill-white' : ''}`} />
             </Button>
           </div>
-          <p className="text-sm text-muted-foreground line-clamp-2">
+
+          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
             {wallpaper.copyright}
           </p>
+
+          {/* Tags */}
+          {isFavorited && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-1">
+                  {currentTags.map((tag: string) => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="text-xs"
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                  {currentTags.length === 0 && (
+                    <span className="text-xs text-muted-foreground">暂无标签</span>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowTagManager(!showTagManager)}
+                  className="p-1 h-6 w-6"
+                >
+                  {showTagManager ? (
+                    <ChevronUp className="h-3 w-3" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+
+              {/* Tag Manager */}
+              {showTagManager && (
+                <div className="pt-2 border-t">
+                  <TagManager wallpaperId={wallpaper.id} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

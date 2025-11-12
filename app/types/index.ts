@@ -1,10 +1,13 @@
 export interface Wallpaper {
+  id: string
   title: string
   copyright: string
   fullUrl: string
   thumbUrl: string
   imageUrl: string
   pageUrl: string
+  isFavored?: boolean
+  tags?: string[]
 }
 
 export interface ApiResponse {
@@ -21,4 +24,13 @@ export type Country =
 export interface WallpaperFilters {
   country: Country
   count: number
+}
+
+export interface WallpaperTag {
+  wallpaperId: string
+  tags: string[]
+}
+
+export interface TagStorage {
+  [wallpaperId: string]: string[]
 }

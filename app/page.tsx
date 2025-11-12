@@ -1,14 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Wallpaper, Country } from '@/types'
+import { Wallpaper, Country } from '@/app/types'
 import { fetchBingWallpapers, fetchSpotlightWallpapers } from '@/lib/api'
 import { WallpaperCard } from '@/components/wallpaper-card'
 import { WallpaperFilters } from '@/components/wallpaper-filters'
 import { LoadingSkeleton } from '@/components/loading-skeleton'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Image as ImageIcon, RefreshCw } from 'lucide-react'
+import { Image as ImageIcon, RefreshCw, Heart } from 'lucide-react'
+import { useFavorites } from '@/hooks/use-favorites'
+import Link from 'next/link'
 
 export default function HomePage() {
   const [bingWallpapers, setBingWallpapers] = useState<Wallpaper[]>([])
@@ -18,6 +20,8 @@ export default function HomePage() {
   const [country, setCountry] = useState<Country>('us')
   const [count, setCount] = useState(12)
   const [activeTab, setActiveTab] = useState<'bing' | 'spotlight'>('bing')
+  const { getFavorites, updateTrigger } = useFavorites()
+  const [favoritesCount, setFavoritesCount] = useState(0)
 
   const loadWallpapers = async () => {
     setLoading(true)
@@ -29,13 +33,26 @@ export default function HomePage() {
         fetchSpotlightWallpapers(count)
       ])
 
+      const favoriteIds = getFavorites()
+
+      const bingsWithFavorites = bingData.map(wallpaper => ({
+        ...wallpaper,
+        isFavored: favoriteIds.includes(wallpaper.id)
+      }))
+
+      const spotlightsWithFavorites = spotlightData.map(wallpaper => ({
+        ...wallpaper,
+        isFavored: favoriteIds.includes(wallpaper.id)
+      }))
+
       console.log('加载的壁纸数据:', {
         bing: bingData.length,
         spotlight: spotlightData.length,
-        requestedCount: count
+        requestedCount: count,
+        favorites: favoriteIds.length
       })
-      setBingWallpapers(bingData)
-      setSpotlightWallpapers(spotlightData)
+      setBingWallpapers(bingsWithFavorites)
+      setSpotlightWallpapers(spotlightsWithFavorites)
     } catch (err) {
       setError('Failed to load wallpapers. Please try again.')
       console.error('Error loading wallpapers:', err)
@@ -46,7 +63,13 @@ export default function HomePage() {
 
   useEffect(() => {
     loadWallpapers()
+    setFavoritesCount(getFavorites().length)
   }, [country, count])
+
+  // Listen for storage changes to update favorites count
+  useEffect(() => {
+    setFavoritesCount(getFavorites().length)
+  }, [getFavorites, updateTrigger])
 
   const currentWallpapers = activeTab === 'bing' ? bingWallpapers : spotlightWallpapers
 
@@ -65,15 +88,31 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
-            <Button
-              onClick={loadWallpapers}
-              disabled={loading}
-              variant="outline"
-              className="gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-4">
+              <Link href="/favorites">
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Heart className="h-4 w-4" />
+                  My Favorites
+                  {favoritesCount > 0 && (
+                    <span className="ml-1 px-2 py-1 bg-primary text-primary-foreground rounded-full text-xs">
+                      {favoritesCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+              <Button
+                onClick={loadWallpapers}
+                disabled={loading}
+                variant="outline"
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
         </div>
       </header>

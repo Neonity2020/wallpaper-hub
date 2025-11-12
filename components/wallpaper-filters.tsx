@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
-import { Country } from '@/types'
+import { Country } from '@/app/types'
 
 interface WallpaperFiltersProps {
   country: Country
